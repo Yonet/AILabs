@@ -12,7 +12,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "prepare": "npm run build",
-    "scaffold:package": "node ./scripts/scaffold-package.js"
+    "scaffold:package": "node ./scripts/scaffold-package.js",
+    "serve": "node ./scripts/serve-package.js"
   },
   "repository": {
     "type": "git",
@@ -35,6 +36,7 @@
     "jest": "^29.7.0",
     "prettier": "^3.5.3",
     "ts-jest": "^29.3.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "http-server": "^14.1.1"
   }
 }
