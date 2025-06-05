@@ -16,7 +16,10 @@
       "path": "./packages/test-utils"
     },
     {
-      "path": "./packages/DreamScape"
+      "path": "./packages/default-project"
+    },
+    {
+      "path": "./packages/my-custom-package"
     }
   ],
   "exclude": [
