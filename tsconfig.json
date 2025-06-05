@@ -5,10 +5,21 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./dist",
-    "rootDir": "./packages/scraper-core/src",
-    "declaration": true
+    "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["node_modules", "dist", "**/__tests__/*", "**/*.test.ts"]
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/scraper-core"
+    },
+    {
+      "path": "./packages/test-utils"
+    }
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/__tests__/*",
+    "**/*.test.ts"
+  ]
 }
