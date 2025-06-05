@@ -1,0 +1,16 @@
+{
+  "name": "@app/DreamScape",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "files": [
+    "dist"
+  ]
+}
