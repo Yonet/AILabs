@@ -2,11 +2,12 @@ const fs = require('fs');
 const path = require('path');
 
 const main = () => {
-  let packageName = process.argv[2];
+  const packageName = process.argv[2];
 
   if (!packageName) {
-    console.log('Warning: No package name provided. Using "default-project".');
-    packageName = "default-project";
+    console.error('Error: Please provide a package name as an argument.');
+    console.log('Usage: node scripts/scaffold-package.js <packageName>');
+    process.exit(1);
   }
 
   console.log(`Attempting to create package: ${packageName}`);
