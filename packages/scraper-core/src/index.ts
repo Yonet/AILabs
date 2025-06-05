@@ -1,3 +1,4 @@
-export function placeholderFunction(): boolean {
+export function placeholderFunction (): boolean {
+  console.log;
   return true;
 }
