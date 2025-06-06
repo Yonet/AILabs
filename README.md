@@ -11,7 +11,7 @@ AI projects.
 
 DreamScape web app provides a user-friendly interface for dream input and leverages an AI model (via the Gemini API) to generate analyses based on the scientific framework you outlined.
 
-[DreamScape App UI](assets/dreamScapeUI.png)
+![DreamScape App UI](assets/dreamScapeUI.png)
 
 ## Getting Started
 1. Clone the repository.
