@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DreamScape: Analyze Your Dreams</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration and Initialization
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse( __firebase_config ) : {
+            apiKey: "YOUR_API_KEY", // Replace with your actual Firebase config if not using __firebase_config
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp( firebaseConfig );
+        const auth = getAuth( app ); // auth is defined here
+        const db = getFirestore( app );
+        // setLogLevel('debug'); // Uncomment for Firestore debugging if used
+
+        let userId = null; // This userId is scoped to the module
+
+        // This listener handles initial auth state and subsequent changes
+        onAuthStateChanged( auth, async ( user ) => {
+            if ( user ) {
+                userId = user.uid;
+                console.log( "User is signed in with UID:", userId );
+            } else {
+                console.log( "User is not signed in. Attempting anonymous sign-in or custom token." );
+                try {
+                    if ( typeof __initial_auth_token !== 'undefined' && __initial_auth_token ) {
+                        await signInWithCustomToken( auth, __initial_auth_token );
+                        console.log( "Signed in with custom token." );
+                        // userId will be set in the next onAuthStateChanged callback
+                    } else {
+                        await signInAnonymously( auth );
+                        console.log( "Signed in anonymously." );
+                        // userId will be set in the next onAuthStateChanged callback
+                    }
+                } catch ( error ) {
+                    console.error( "Error during sign-in:", error );
+                    // Fallback to a random ID if all sign-in methods fail
+                    if ( !userId ) { // Check if userId is still null
+                        userId = crypto.randomUUID();
+                        console.log( "Using random UUID for userId due to sign-in error:", userId );
+                    }
+                }
+            }
+        } );
+
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            /* Light blue-gray background */
+        }
+
+        .dream-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .dream-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            /* Blue-500 */
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+            /* Blue-600 */
+        }
+
+        textarea,
+        input[type="text"] {
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            /* Gray-300 */
+            padding: 0.75rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        textarea:focus,
+        input[type="text"]:focus {
+            border-color: #3b82f6;
+            /* Blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            /* Light grey */
+            border-top: 4px solid #3b82f6;
+            /* Blue */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            font-size: 0.875rem;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.error {
+            background-color: #ef4444;
+            /* Red-500 */
+        }
+
+        .toast.success {
+            background-color: #22c55e;
+            /* Green-500 */
+        }
+
+        .prose-custom h3 {
+            font-size: 1.125rem;
+            /* text-lg */
+            font-weight: 600;
+            /* semibold */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+            /* Gray-800 */
+        }
+
+        .prose-custom p {
+            font-size: 0.875rem;
+            /* text-sm */
+            line-height: 1.625;
+            /* leading-relaxed */
+            color: #4b5563;
+            /* Gray-600 */
+            margin-bottom: 0.75rem;
+        }
+
+        .prose-custom ul {
+            list-style-type: disc;
+            margin-left: 1.25rem;
+            /* ml-5 */
+            font-size: 0.875rem;
+            /* text-sm */
+            color: #4b5563;
+            /* Gray-600 */
+        }
+
+        .prose-custom li {
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+
+    <div class="dream-card w-full max-w-2xl p-6 sm:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">DreamScape</h1>
+            <p class="text-gray-600 mt-2 text-sm sm:text-base">Unlock the science behind your dreams.</p>
+        </header>
+
+        <main>
+            <div class="space-y-6">
+                <div>
+                    <label for="dreamText" class="block text-sm font-medium text-gray-700 mb-1">Describe your
+                        dream:</label>
+                    <textarea id="dreamText" name="dreamText" rows="6"
+                        class="w-full shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="E.g., I was flying over a city, then I started falling..."></textarea>
+                </div>
+
+                <div>
+                    <label for="wakingLifeContext" class="block text-sm font-medium text-gray-700 mb-1">Recent waking
+                        life events or feelings (optional):</label>
+                    <input type="text" id="wakingLifeContext" name="wakingLifeContext"
+                        class="w-full shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="E.g., Stressed about an upcoming exam, had an argument...">
+                </div>
+
+                <div>
+                    <label for="emotionalIntensity" class="block text-sm font-medium text-gray-700 mb-1">Primary
+                        emotion(s) in the dream (optional):</label>
+                    <input type="text" id="emotionalIntensity" name="emotionalIntensity"
+                        class="w-full shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="E.g., Fear, joy, confusion, anxiety...">
+                </div>
+
+                <button id="analyzeDreamBtn" class="btn-primary w-full flex items-center justify-center">
+                    Analyze Dream
+                </button>
+            </div>
+
+            <div id="loadingIndicator" class="loader hidden mt-6"></div>
+            <div id="analysisOutput" class="mt-8 prose-custom">
+                <!-- Analysis will be displayed here -->
+            </div>
+        </main>
+
+        <footer class="mt-10 pt-6 border-t border-gray-200 text-center">
+            <p class="text-xs text-gray-500">
+                <strong>Disclaimer:</strong> DreamScape is for informational and self-exploration purposes only. It is
+                not a substitute for professional medical advice, diagnosis, or psychological treatment. If you have
+                concerns about your mental health or recurring distressing dreams, please consult a qualified healthcare
+                professional.
+            </p>
+        </footer>
+    </div>
+
+    <div id="toastNotification" class="toast"></div>
+
+    <script>
+        // This script block contains UI logic and the analyzeDream function.
+        // It does NOT need to access 'auth' directly here, as auth state is handled in the module script.
+        const dreamTextEl = document.getElementById( 'dreamText' );
+        const wakingLifeContextEl = document.getElementById( 'wakingLifeContext' );
+        const emotionalIntensityEl = document.getElementById( 'emotionalIntensity' );
+        const analyzeDreamBtn = document.getElementById( 'analyzeDreamBtn' );
+        const loadingIndicator = document.getElementById( 'loadingIndicator' );
+        const analysisOutput = document.getElementById( 'analysisOutput' );
+        const toastNotification = document.getElementById( 'toastNotification' );
+
+        // Function to show toast notifications
+        function showToast ( message, type = 'error' ) {
+            toastNotification.textContent = message;
+            toastNotification.className = `toast ${type} show`; // Add 'show' class
+            setTimeout( () => {
+                toastNotification.className = `toast ${type}`; // Remove 'show' to hide
+            }, 3000 );
+        }
+
+        analyzeDreamBtn.addEventListener( 'click', analyzeDream );
+
+        async function analyzeDream () {
+            const dreamDescription = dreamTextEl.value.trim();
+            const wakingContext = wakingLifeContextEl.value.trim();
+            const emotions = emotionalIntensityEl.value.trim();
+
+            if ( !dreamDescription ) {
+                showToast( 'Please describe your dream first.', 'error' );
+                return;
+            }
+
+            loadingIndicator.classList.remove( 'hidden' );
+            analysisOutput.innerHTML = ''; // Clear previous analysis
+            analyzeDreamBtn.disabled = true;
+            analyzeDreamBtn.classList.add( 'opacity-50', 'cursor-not-allowed' );
+
+
+            // Construct the prompt for the Gemini API
+            let prompt = `You are DreamScape, an AI dream analysis assistant. Your interpretations are strictly based on scientific research on dreams.
+            Analyze the following dream based on these core principles:
+            1.  **Information Processing Theory:** Dreams help consolidate memories, integrate new knowledge, and problem-solve.
+            2.  **Emotional Regulation Theory:** Dreams process and regulate emotions, especially those suppressed during waking hours. Brain areas like the amygdala (emotions) and hippocampus (memory) are active. REM sleep is key for emotional memory consolidation.
+            3.  **Threat Simulation Theory (TST):** Dreams act as a virtual rehearsal for threatening situations, enhancing preparedness. Common themes like being chased can relate to this.
+            4.  **Activation-Synthesis Theory:** Dreams are the forebrain's attempt to make sense of random brainstem signals during REM sleep, explaining some bizarre elements. Reduced prefrontal cortex activity contributes to illogical aspects and lack of self-awareness.
+            5.  **Continuity Hypothesis:** Dream content reflects waking life experiences, concerns, thoughts, and emotions. Stressful or emotional events are more likely to appear. The "dream-lag effect" means memories might surface days later.
+            6.  **Common Dream Themes & Scientific Correlations (Interpret these if present, citing potential links):**
+                * **Being Chased:** Anxiety, stress, avoidance, negative interpersonal relationships (TST link).
+                * **Falling:** Loss of control, insecurity, anxiety. Terrifying fall vs. gentle fall.
+                * **Losing Teeth:** Often linked to actual dental irritation (jaw/teeth tension). Older views: loss of power, communication issues (prioritize empirical).
+                * **Flying:** Freedom, independence, new perspectives. Can also warn against hubris.
+                * **Water:** Emotional states. Turbulent (overwhelm), clear (connection to feelings), stagnant (emotional stagnation).
+                * **Houses/Buildings:** The self/psyche. Condition reflects self-perception. New rooms = new aspects of self.
+                * **Death:** Endings, beginnings, transitions, transformation (rarely literal).
+                * **School/Teacher/Study:** Stress, performance anxiety, feeling tested.
+            7.  **Key Dream Characteristics to Consider:**
+                * **Emotional Intensity:** Note if the user specifies emotions. Negative emotions are common.
+                * **Bizarreness:** Acknowledge as a normal feature of dream cognition, possibly linked to creative processing.
+                * **Recurrence (if mentioned):** May point to unresolved issues.
+                * **Lucidity (if mentioned):** Awareness of dreaming.
+
+            **Your Task:**
+            Analyze the dream provided below. Identify any common themes and specific characteristics.
+            Provide interpretations using **cautious, probabilistic language** (e.g., "This *may suggest*...", "It's *possible* that...", "One theory *proposes*...", "Some research *links* this to...").
+            If waking life context or emotions are provided by the user, try to integrate them into your analysis based on the Continuity Hypothesis.
+            Present the analysis in a structured, readable format (e.g., using headings for themes, bullet points for interpretations).
+            **Crucially, DO NOT provide medical advice, psychological diagnoses, or definitive "this means that" statements. Your role is to offer scientifically-informed perspectives for self-reflection.**
+            Conclude with a reminder that this is for self-exploration and not a substitute for professional help if the user is distressed.
+
+            **User's Dream Input:**
+            Dream Description: "${dreamDescription}"
+            `;
+
+            if ( wakingContext ) {
+                prompt += `\nWaking Life Context: "${wakingContext}"`;
+            }
+            if ( emotions ) {
+                prompt += `\nPrimary Emotion(s) in Dream: "${emotions}"`;
+            }
+
+            const apiKey = ""; // Gemini API key will be injected by the environment if needed for models other than gemini-2.0-flash
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+
+            try {
+                const response = await fetch( apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify( payload )
+                } );
+
+                if ( !response.ok ) {
+                    const errorData = await response.json();
+                    console.error( 'API Error Response:', errorData );
+                    throw new Error( `API request failed with status ${response.status}: ${errorData.error?.message || 'Unknown error'}` );
+                }
+
+                const result = await response.json();
+
+                if ( result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0 ) {
+
+                    let analysisText = result.candidates[0].content.parts[0].text;
+
+                    analysisText = analysisText.replace( /\n\n/g, '<br><br>' );
+                    analysisText = analysisText.replace( /\n/g, '<br>' );
+                    analysisText = analysisText.replace( /\*\*(.*?)\*\*/g, '<strong>$1</strong>' );
+
+                    analysisText = analysisText.replace( /^(#{1,3})\s*(.*)$/gm, ( match, hashes, content ) => {
+                        const level = hashes.length;
+                        if ( level === 1 ) return `<h2 class="text-xl font-semibold mt-4 mb-2 text-gray-800">${content}</h2>`;
+                        if ( level === 2 ) return `<h3 class="text-lg font-semibold mt-3 mb-1 text-gray-700">${content}</h3>`;
+                        return `<h4 class="text-md font-semibold mt-2 mb-1 text-gray-700">${content}</h4>`;
+                    } );
+
+                    analysisOutput.innerHTML = `
+                        <h2 class="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">Dream Analysis:</h2>
+                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">${analysisText}</div>
+                    `;
+                    showToast( 'Analysis complete!', 'success' );
+                } else {
+                    console.error( 'Unexpected API response structure:', result );
+                    analysisOutput.innerHTML = '<p class="text-red-600">Could not retrieve analysis. The AI response was not in the expected format.</p>';
+                    showToast( 'Error: Could not parse AI response.', 'error' );
+                }
+
+            } catch ( error ) {
+                console.error( 'Error analyzing dream:', error );
+                analysisOutput.innerHTML = `<p class="text-red-600">An error occurred while analyzing your dream: ${error.message}. Please try again later.</p>`;
+                showToast( `Error: ${error.message}`, 'error' );
+            } finally {
+                loadingIndicator.classList.add( 'hidden' );
+                analyzeDreamBtn.disabled = false;
+                analyzeDreamBtn.classList.remove( 'opacity-50', 'cursor-not-allowed' );
+            }
+        }
+
+        // The problematic block that caused 'auth is not defined' has been removed.
+        // The onAuthStateChanged listener in the <script type="module"> at the top
+        // already handles the initial authentication state logging.
+    </script>
+</body>
+
+</html>
