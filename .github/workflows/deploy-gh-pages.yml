@@ -1,0 +1,41 @@
+name: Deploy DreamScape to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Or your default branch
+    paths:
+      - 'packages/DreamScape/index.html' # Only run if index.html changes
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (if needed for future build steps, not strictly for copy)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Or your preferred LTS version
+
+      # No build step needed for now as index.html is self-contained
+
+      - name: Ensure /docs directory exists
+        run: mkdir -p docs
+
+      - name: Copy index.html to /docs
+        run: cp packages/DreamScape/index.html docs/index.html
+
+      - name: Commit and push changes to /docs
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add docs/index.html
+          # Commit only if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m 'Update docs/index.html for GitHub Pages'
+            git push
+          else
+            echo "No changes to commit in /docs folder."
+          fi
