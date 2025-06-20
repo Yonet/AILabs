@@ -1,1 +1,7 @@
-# Add project dependencies here
+Pillow
+torch
+torchvision
+diffusers
+transformers
+huggingface_hub
+rembg
