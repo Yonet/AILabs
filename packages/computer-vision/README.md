@@ -44,6 +44,7 @@ This project demonstrates the use of the Hunyuan3D-2.1 model for image-to-3D gen
 - `src/hunyuan3d-vae-v2-1/`: Contains VAE model components.
 - `scripts/run.sh`: Shell script to execute the demo.
 - `requirements.txt`: Python dependencies.
+
 # Computer Vision Project
 
 This project is for computer vision tasks.
