@@ -35,6 +35,7 @@ This project demonstrates the use of the Hunyuan3D-2.1 model for image-to-3D gen
         *   `demo.glb`: The initial 3D mesh.
         *   `demo_textured.glb`: The final textured 3D mesh.
 
+
 ## Manual Setup for `hy3dshape` Module (Important)
 
 Due to limitations in the automated setup environment, the `hy3dshape` Python module (source from the `hunyuan3d-dit-v2-1` directory on Hugging Face) could not be downloaded automatically. You will need to manually ensure these files are in place:
@@ -60,11 +61,13 @@ Due to limitations in the automated setup environment, the `hy3dshape` Python mo
 
 - `assets/demo.png`: Input image (user-provided).
 - `src/demo.py`: The main Python script to run the Hunyuan3D model.
+
 - `src/hy3dshape/`: **(Manual Setup Required)** Contains code for shape generation from `hunyuan3d-dit-v2-1`. See "Manual Setup for `hy3dshape` Module".
 - `src/hy3dpaint/`: Contains code for texture painting (adapted from Hunyuan3D).
 - `src/hunyuan3d-vae-v2-1/`: Contains VAE model components.
 - `scripts/run.sh`: Shell script to execute the demo.
 - `requirements.txt`: Python dependencies.
+
 # Computer Vision Project
 
 This project is for computer vision tasks.
