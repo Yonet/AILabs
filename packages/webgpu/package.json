@@ -1,5 +1,5 @@
 {
-  "name": "webgpu-triangle",
+  "name": "webgpu",
   "version": "1.0.0",
   "description": "A simple WebGPU triangle renderer",
   "main": "dist/main.js",
@@ -9,7 +9,11 @@
     "start": "http-server . -o -c-1 --port 8080",
     "dev": "npm run build && npm run start"
   },
-  "keywords": ["webgpu", "typescript", "graphics"],
+  "keywords": [
+    "webgpu",
+    "typescript",
+    "graphics"
+  ],
   "author": "AI Agent",
   "license": "ISC",
   "type": "module",
